@@ -99,7 +99,7 @@ def configure(env):
         # Don't use dynamic_cast, necessary with no-rtti.
         env.Append(CPPDEFINES=["NO_SAFE_CAST"])
 
-    env.Append(LINKFLAGS=["-s", "INITIAL_MEMORY=%sMB" % env["initial_memory"]])
+    env.Append(LINKFLAGS=["-s", f'INITIAL_MEMORY={env["initial_memory"]}MB'])
 
     ## Copy env variables.
     env["ENV"] = os.environ
@@ -192,7 +192,7 @@ def configure(env):
         env.Append(LINKFLAGS=["-s", "USE_PTHREADS=1"])
         env.Append(LINKFLAGS=["-s", "PTHREAD_POOL_SIZE=8"])
         env.Append(LINKFLAGS=["-s", "WASM_MEM_MAX=2048MB"])
-        env.extra_suffix = ".threads" + env.extra_suffix
+        env.extra_suffix = f".threads{env.extra_suffix}"
     else:
         env.Append(CPPDEFINES=["NO_THREADS"])
 
@@ -210,7 +210,7 @@ def configure(env):
         env.Append(LINKFLAGS=["-s", "RELOCATABLE=1"])
         # Weak symbols are broken upstream: https://github.com/emscripten-core/emscripten/issues/12819
         env.Append(CPPDEFINES=["ZSTD_HAVE_WEAK_SYMBOLS=0"])
-        env.extra_suffix = ".gdnative" + env.extra_suffix
+        env.extra_suffix = f".gdnative{env.extra_suffix}"
 
     # Reduce code size by generating less support code (e.g. skip NodeJS support).
     env.Append(LINKFLAGS=["-s", "ENVIRONMENT=web,worker"])

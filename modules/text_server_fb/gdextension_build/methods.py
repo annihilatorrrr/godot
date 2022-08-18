@@ -18,30 +18,22 @@ def no_verbose(sys, env):
 
     # There is a space before "..." to ensure that source file names can be
     # Ctrl + clicked in the VS Code terminal.
-    compile_source_message = "{}Compiling {}$SOURCE{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
-    java_compile_source_message = "{}Compiling {}$SOURCE{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
-    compile_shared_source_message = "{}Compiling shared {}$SOURCE{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
-    link_program_message = "{}Linking Program {}$TARGET{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
-    link_library_message = "{}Linking Static Library {}$TARGET{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
-    ranlib_library_message = "{}Ranlib Library {}$TARGET{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
-    link_shared_library_message = "{}Linking Shared Library {}$TARGET{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
-    java_library_message = "{}Creating Java Archive {}$TARGET{} ...{}".format(
-        colors["blue"], colors["bold_blue"], colors["blue"], colors["reset"]
-    )
+    compile_source_message = f'{colors["blue"]}Compiling {colors["bold_blue"]}$SOURCE{colors["blue"]} ...{colors["reset"]}'
+
+    java_compile_source_message = f'{colors["blue"]}Compiling {colors["bold_blue"]}$SOURCE{colors["blue"]} ...{colors["reset"]}'
+
+    compile_shared_source_message = f'{colors["blue"]}Compiling shared {colors["bold_blue"]}$SOURCE{colors["blue"]} ...{colors["reset"]}'
+
+    link_program_message = f'{colors["blue"]}Linking Program {colors["bold_blue"]}$TARGET{colors["blue"]} ...{colors["reset"]}'
+
+    link_library_message = f'{colors["blue"]}Linking Static Library {colors["bold_blue"]}$TARGET{colors["blue"]} ...{colors["reset"]}'
+
+    ranlib_library_message = f'{colors["blue"]}Ranlib Library {colors["bold_blue"]}$TARGET{colors["blue"]} ...{colors["reset"]}'
+
+    link_shared_library_message = f'{colors["blue"]}Linking Shared Library {colors["bold_blue"]}$TARGET{colors["blue"]} ...{colors["reset"]}'
+
+    java_library_message = f'{colors["blue"]}Creating Java Archive {colors["bold_blue"]}$TARGET{colors["blue"]} ...{colors["reset"]}'
+
 
     env.Append(CXXCOMSTR=[compile_source_message])
     env.Append(CCCOMSTR=[compile_source_message])
@@ -64,9 +56,9 @@ def disable_warnings(self):
         self.Append(CCFLAGS=["/w"])
         self.Append(CFLAGS=["/w"])
         self.Append(CXXFLAGS=["/w"])
-        self["CCFLAGS"] = [x for x in self["CCFLAGS"] if not x in warn_flags]
-        self["CFLAGS"] = [x for x in self["CFLAGS"] if not x in warn_flags]
-        self["CXXFLAGS"] = [x for x in self["CXXFLAGS"] if not x in warn_flags]
+        self["CCFLAGS"] = [x for x in self["CCFLAGS"] if x not in warn_flags]
+        self["CFLAGS"] = [x for x in self["CFLAGS"] if x not in warn_flags]
+        self["CXXFLAGS"] = [x for x in self["CXXFLAGS"] if x not in warn_flags]
     else:
         self.Append(CCFLAGS=["-w"])
         self.Append(CFLAGS=["-w"])

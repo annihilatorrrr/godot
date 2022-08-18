@@ -23,10 +23,9 @@ def _reg_open_key_bits(key, subkey, bits):
         if bits == "64":
             # Force 32bit process to search in 64bit registry
             sam |= winreg.KEY_WOW64_64KEY
-    else:
-        if bits == "32":
-            # Force 64bit process to search in 32bit registry
-            sam |= winreg.KEY_WOW64_32KEY
+    elif bits == "32":
+        # Force 64bit process to search in 32bit registry
+        sam |= winreg.KEY_WOW64_32KEY
 
     return winreg.OpenKey(key, subkey, 0, sam)
 
@@ -34,8 +33,7 @@ def _reg_open_key_bits(key, subkey, bits):
 def _find_mono_in_reg(subkey, bits):
     try:
         with _reg_open_key_bits(winreg.HKEY_LOCAL_MACHINE, subkey, bits) as hKey:
-            value = winreg.QueryValueEx(hKey, "SdkInstallRoot")[0]
-            return value
+            return winreg.QueryValueEx(hKey, "SdkInstallRoot")[0]
     except OSError:
         return None
 
@@ -43,8 +41,7 @@ def _find_mono_in_reg(subkey, bits):
 def _find_mono_in_reg_old(subkey, bits):
     try:
         with _reg_open_key_bits(winreg.HKEY_LOCAL_MACHINE, subkey, bits) as hKey:
-            default_clr = winreg.QueryValueEx(hKey, "DefaultCLR")[0]
-            if default_clr:
+            if default_clr := winreg.QueryValueEx(hKey, "DefaultCLR")[0]:
                 return _find_mono_in_reg(subkey + "\\" + default_clr, bits)
             return None
     except OSError:
@@ -56,9 +53,7 @@ def find_mono_root_dir(bits):
     if root_dir is not None:
         return str(root_dir)
     root_dir = _find_mono_in_reg_old(r"SOFTWARE\Novell\Mono", bits)
-    if root_dir is not None:
-        return str(root_dir)
-    return ""
+    return str(root_dir) if root_dir is not None else ""
 
 
 def find_msbuild_tools_path_reg():
@@ -95,7 +90,7 @@ def find_msbuild_tools_path_reg():
 
         raise ValueError("Cannot find `installationPath` entry")
     except ValueError as e:
-        print("Error reading output from vswhere: " + e.message)
+        print(f"Error reading output from vswhere: {e.message}")
     except subprocess.CalledProcessError as e:
         print(e.output)
     except OSError as e:
@@ -106,7 +101,6 @@ def find_msbuild_tools_path_reg():
     try:
         subkey = r"SOFTWARE\Microsoft\MSBuild\ToolsVersions\14.0"
         with _reg_open_key(winreg.HKEY_LOCAL_MACHINE, subkey) as hKey:
-            value = winreg.QueryValueEx(hKey, "MSBuildToolsPath")[0]
-            return value
+            return winreg.QueryValueEx(hKey, "MSBuildToolsPath")[0]
     except OSError:
         return ""

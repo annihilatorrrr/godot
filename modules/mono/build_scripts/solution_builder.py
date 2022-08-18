@@ -13,8 +13,10 @@ def find_dotnet_cli():
             hint_path = os.path.join(hint_dir, "dotnet")
             if os.path.isfile(hint_path) and os.access(hint_path, os.X_OK):
                 return hint_path
-            if os.path.isfile(hint_path + ".exe") and os.access(hint_path + ".exe", os.X_OK):
-                return hint_path + ".exe"
+            if os.path.isfile(f"{hint_path}.exe") and os.access(
+                f"{hint_path}.exe", os.X_OK
+            ):
+                return f"{hint_path}.exe"
     else:
         for hint_dir in os.environ["PATH"].split(os.pathsep):
             hint_dir = hint_dir.strip('"')
@@ -38,16 +40,18 @@ def find_msbuild_unix():
         hint_path = os.path.join(hint_dir, "msbuild")
         if os.path.isfile(hint_path):
             return hint_path
-        elif os.path.isfile(hint_path + ".exe"):
-            return hint_path + ".exe"
+        elif os.path.isfile(f"{hint_path}.exe"):
+            return f"{hint_path}.exe"
 
     for hint_dir in os.environ["PATH"].split(os.pathsep):
         hint_dir = hint_dir.strip('"')
         hint_path = os.path.join(hint_dir, "msbuild")
         if os.path.isfile(hint_path) and os.access(hint_path, os.X_OK):
             return hint_path
-        if os.path.isfile(hint_path + ".exe") and os.access(hint_path + ".exe", os.X_OK):
-            return hint_path + ".exe"
+        if os.path.isfile(f"{hint_path}.exe") and os.access(
+            f"{hint_path}.exe", os.X_OK
+        ):
+            return f"{hint_path}.exe"
 
     return None
 
@@ -63,9 +67,7 @@ def find_msbuild_windows(env):
     mono_bin_dir = os.path.join(mono_root, "bin")
     msbuild_mono = os.path.join(mono_bin_dir, "msbuild.bat")
 
-    msbuild_tools_path = find_msbuild_tools_path_reg()
-
-    if msbuild_tools_path:
+    if msbuild_tools_path := find_msbuild_tools_path_reg():
         return (os.path.join(msbuild_tools_path, "MSBuild.exe"), {})
 
     if os.path.isfile(msbuild_mono):
@@ -84,7 +86,7 @@ def find_msbuild_windows(env):
 
 def run_command(command, args, env_override=None, name=None):
     def cmd_args_to_str(cmd_args):
-        return " ".join([arg if not " " in arg else '"%s"' % arg for arg in cmd_args])
+        return " ".join([arg if " " not in arg else '"%s"' % arg for arg in cmd_args])
 
     args = [command] + args
 
@@ -117,29 +119,31 @@ def build_solution(env, solution_path, build_config, extra_msbuild_args=[]):
 
     msbuild_args = []
 
-    dotnet_cli = find_dotnet_cli()
-
-    if dotnet_cli:
+    if dotnet_cli := find_dotnet_cli():
         msbuild_path = dotnet_cli
         msbuild_args += ["msbuild"]  # `dotnet msbuild` command
+    elif os.name == "nt":
+        msbuild_info = find_msbuild_windows(env)
+        if msbuild_info is None:
+            raise RuntimeError("Cannot find MSBuild executable")
+        msbuild_path = msbuild_info[0]
+        msbuild_env.update(msbuild_info[1])
     else:
-        # Find MSBuild
-        if os.name == "nt":
-            msbuild_info = find_msbuild_windows(env)
-            if msbuild_info is None:
-                raise RuntimeError("Cannot find MSBuild executable")
-            msbuild_path = msbuild_info[0]
-            msbuild_env.update(msbuild_info[1])
-        else:
-            msbuild_path = find_msbuild_unix()
-            if msbuild_path is None:
-                raise RuntimeError("Cannot find MSBuild executable")
+        msbuild_path = find_msbuild_unix()
+        if msbuild_path is None:
+            raise RuntimeError("Cannot find MSBuild executable")
 
-    print("MSBuild path: " + msbuild_path)
+    print(f"MSBuild path: {msbuild_path}")
 
     # Build solution
 
-    msbuild_args += [solution_path, "/restore", "/t:Build", "/p:Configuration=" + build_config]
+    msbuild_args += [
+        solution_path,
+        "/restore",
+        "/t:Build",
+        f"/p:Configuration={build_config}",
+    ]
+
     msbuild_args += extra_msbuild_args
 
     run_command(msbuild_path, msbuild_args, env_override=msbuild_env, name="msbuild")

@@ -32,13 +32,13 @@ for lib in sys_env["JS_LIBS"]:
 for js in env["JS_PRE"]:
     sys_env.Append(LINKFLAGS=["--pre-js", js.abspath])
 for ext in env["JS_EXTERNS"]:
-    sys_env["ENV"]["EMCC_CLOSURE_ARGS"] += " --externs " + ext.abspath
+    sys_env["ENV"]["EMCC_CLOSURE_ARGS"] += f" --externs {ext.abspath}"
 
 build = []
+build_targets = ["#bin/godot${PROGSUFFIX}.js", "#bin/godot${PROGSUFFIX}.wasm"]
+if env["threads_enabled"]:
+    build_targets.append("#bin/godot${PROGSUFFIX}.worker.js")
 if env["gdnative_enabled"]:
-    build_targets = ["#bin/godot${PROGSUFFIX}.js", "#bin/godot${PROGSUFFIX}.wasm"]
-    if env["threads_enabled"]:
-        build_targets.append("#bin/godot${PROGSUFFIX}.worker.js")
     # Reset libraries. The main runtime will only link emscripten libraries, not godot ones.
     sys_env["LIBS"] = []
     # We use IDBFS. Since Emscripten 1.39.1 it needs to be linked explicitly.
@@ -62,9 +62,6 @@ if env["gdnative_enabled"]:
     wasm = wasm_env.add_program("#bin/godot.side${PROGSUFFIX}.wasm", javascript_files)
     build = sys + [wasm[0]]
 else:
-    build_targets = ["#bin/godot${PROGSUFFIX}.js", "#bin/godot${PROGSUFFIX}.wasm"]
-    if env["threads_enabled"]:
-        build_targets.append("#bin/godot${PROGSUFFIX}.worker.js")
     # We use IDBFS. Since Emscripten 1.39.1 it needs to be linked explicitly.
     sys_env.Append(LIBS=["idbfs.js"])
     build = sys_env.Program(build_targets, javascript_files + ["javascript_runtime.cpp"])

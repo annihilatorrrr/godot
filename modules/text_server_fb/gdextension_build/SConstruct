@@ -157,8 +157,15 @@ if env["freetype_enabled"]:
     ]
     thirdparty_freetype_sources += [thirdparty_zlib_dir + file for file in thirdparty_zlib_sources]
 
-    env_freetype.Append(CPPPATH=[thirdparty_freetype_dir + "/include", thirdparty_zlib_dir, thirdparty_png_dir])
-    env.Append(CPPPATH=[thirdparty_freetype_dir + "/include"])
+    env_freetype.Append(
+        CPPPATH=[
+            f"{thirdparty_freetype_dir}/include",
+            thirdparty_zlib_dir,
+            thirdparty_png_dir,
+        ]
+    )
+
+    env.Append(CPPPATH=[f"{thirdparty_freetype_dir}/include"])
 
     env_freetype.Append(
         CPPDEFINES=[

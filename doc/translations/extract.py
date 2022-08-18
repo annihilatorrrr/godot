@@ -106,13 +106,13 @@ class DescList:
 
 
 def print_error(error):
-    print("ERROR: {}".format(error))
+    print(f"ERROR: {error}")
 
 
 ## build classes with xml elements recursively
 def _collect_classes_dir(path, classes):
     if not os.path.isdir(path):
-        print_error("Invalid directory path: {}".format(path))
+        print_error(f"Invalid directory path: {path}")
         exit(1)
     for _dir in map(lambda dir: os.path.join(path, dir), os.listdir(path)):
         if os.path.isdir(_dir):
@@ -127,39 +127,36 @@ def _collect_classes_dir(path, classes):
 ## opens a file and parse xml add to classes
 def _collect_classes_file(path, classes):
     if not os.path.isfile(path) or not path.endswith(".xml"):
-        print_error("Invalid xml file path: {}".format(path))
+        print_error(f"Invalid xml file path: {path}")
         exit(1)
-    print("Collecting file: {}".format(os.path.basename(path)))
+    print(f"Collecting file: {os.path.basename(path)}")
 
     try:
         tree = ET.parse(path, parser=LineNumberingParser())
     except ET.ParseError as e:
-        print_error("Parse error reading file '{}': {}".format(path, e))
+        print_error(f"Parse error reading file '{path}': {e}")
         exit(1)
 
     doc = tree.getroot()
 
     if "name" in doc.attrib:
         if "version" not in doc.attrib:
-            print_error("Version missing from 'doc', file: {}".format(path))
+            print_error(f"Version missing from 'doc', file: {path}")
 
         name = doc.attrib["name"]
         if name in classes:
-            print_error("Duplicate class {} at path {}".format(name, path))
+            print_error(f"Duplicate class {name} at path {path}")
             exit(1)
         classes[name] = DescList(doc, path)
     else:
-        print_error("Unknown XML file {}, skipping".format(path))
+        print_error(f"Unknown XML file {path}, skipping")
 
 
 ## regions are list of tuples with size 3 (start_index, end_index, indent)
 ## indication in string where the codeblock starts, ends, and it's indent
 ## if i inside the region returns the indent, else returns -1
 def _get_xml_indent(i, regions):
-    for region in regions:
-        if region[0] < i < region[1]:
-            return region[2]
-    return -1
+    return next((region[2] for region in regions if region[0] < i < region[1]), -1)
 
 
 ## find and build all regions of codeblock which we need later
@@ -181,7 +178,7 @@ def _make_codeblock_regions(desc, path=""):
                 break
         end_index = desc.find("[/codeblock]", code_block_index)
         if end_index < 0:
-            print_error("Non terminating codeblock: {}".format(path))
+            print_error(f"Non terminating codeblock: {path}")
             exit(1)
         code_block_regions.append((code_block_index, end_index, xml_indent))
         code_block_index += 1
@@ -201,12 +198,11 @@ def _strip_and_split_desc(desc, code_block_regions):
             c = "\\\\"  ## <element \> is invalid for msgmerge
         if c == "\t":
             xml_indent = _get_xml_indent(i, code_block_regions)
-            if xml_indent >= 0:
-                total_indent += 1
-                if xml_indent < total_indent:
-                    c = "\\t"
-                else:
-                    continue
+            if xml_indent < 0:
+                continue
+            total_indent += 1
+            if xml_indent < total_indent:
+                c = "\\t"
             else:
                 continue
         desc_strip += c
@@ -248,7 +244,7 @@ def _generate_translation_catalog_file(unique_msgs, output, location_line=False)
         f.write(HEADER)
         for msg in BASE_STRINGS:
             f.write("#: doc/tools/make_rst.py\n")
-            f.write('msgid "{}"\n'.format(msg))
+            f.write(f'msgid "{msg}"\n')
             f.write('msgstr ""\n\n')
         for msg in unique_msgs:
             if len(msg) == 0 or msg in BASE_STRINGS:
@@ -261,19 +257,19 @@ def _generate_translation_catalog_file(unique_msgs, output, location_line=False)
                 if path.startswith("./"):
                     path = path[2:]
                 if location_line:  # Can be skipped as diffs on line numbers are spammy.
-                    f.write(" {}:{}".format(path, desc.line_no))
+                    f.write(f" {path}:{desc.line_no}")
                 else:
-                    f.write(" {}".format(path))
+                    f.write(f" {path}")
             f.write("\n")
 
-            f.write('msgid "{}"\n'.format(msg))
+            f.write(f'msgid "{msg}"\n')
             f.write('msgstr ""\n\n')
 
     ## TODO: what if 'nt'?
     if os.name == "posix":
         print("Wrapping template at 79 characters for compatibility with Weblate.")
         os.system("msgmerge -w79 {0} {0} > {0}.wrap".format(output))
-        shutil.move("{}.wrap".format(output), output)
+        shutil.move(f"{output}.wrap", output)
 
 
 def main():
@@ -286,16 +282,16 @@ def main():
 
     output = os.path.abspath(args.output)
     if not os.path.isdir(os.path.dirname(output)) or not output.endswith(".pot"):
-        print_error("Invalid output path: {}".format(output))
+        print_error(f"Invalid output path: {output}")
         exit(1)
 
     classes = OrderedDict()
     for path in args.path:
         if not os.path.isdir(path):
-            print_error("Invalid working directory path: {}".format(path))
+            print_error(f"Invalid working directory path: {path}")
             exit(1)
 
-        print("\nCurrent working dir: {}".format(path))
+        print(f"\nCurrent working dir: {path}")
 
         path_classes = OrderedDict()  ## dictionary of key=class_name, value=DescList objects
         _collect_classes_dir(path, path_classes)

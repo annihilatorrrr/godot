@@ -45,9 +45,10 @@ def build(env_mono):
     nupkgs_versions = get_nupkgs_versions(os.path.join(module_dir, "SdkPackageVersions.props"))
 
     target_filenames = [
-        "Godot.NET.Sdk.%s.nupkg" % nupkgs_versions["Godot.NET.Sdk"],
-        "Godot.SourceGenerators.%s.nupkg" % nupkgs_versions["Godot.SourceGenerators"],
+        f'Godot.NET.Sdk.{nupkgs_versions["Godot.NET.Sdk"]}.nupkg',
+        f'Godot.SourceGenerators.{nupkgs_versions["Godot.SourceGenerators"]}.nupkg',
     ]
+
 
     targets = [os.path.join(nupkgs_dir, filename) for filename in target_filenames]
 

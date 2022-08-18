@@ -140,7 +140,7 @@ if env["builtin_harfbuzz"]:
             env_harfbuzz.Prepend(CPPPATH=["#thirdparty/graphite/include"])
             env_harfbuzz.Append(CCFLAGS=["-DGRAPHITE2_STATIC"])
 
-    if env["platform"] == "android" or env["platform"] == "linuxbsd":
+    if env["platform"] in ["android", "linuxbsd"]:
         env_harfbuzz.Append(CCFLAGS=["-DHAVE_PTHREAD"])
 
     if env["platform"] == "javascript":
@@ -205,10 +205,11 @@ if env["builtin_graphite"] and freetype_enabled and env["graphite"]:
         "src/FileFace.cpp",
         "src/json.cpp",
     ]
-    if not env_graphite.msvc:
-        thirdparty_sources += ["src/direct_machine.cpp"]
-    else:
-        thirdparty_sources += ["src/call_machine.cpp"]
+    thirdparty_sources += (
+        ["src/call_machine.cpp"]
+        if env_graphite.msvc
+        else ["src/direct_machine.cpp"]
+    )
 
     thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
@@ -452,8 +453,17 @@ if env["builtin_icu"]:
     icu_data_name = "icudt71l.dat"
 
     if env_icu["tools"]:
-        env_icu.Depends("#thirdparty/icu4c/icudata.gen.h", "#thirdparty/icu4c/" + icu_data_name)
-        env_icu.Command("#thirdparty/icu4c/icudata.gen.h", "#thirdparty/icu4c/" + icu_data_name, make_icu_data)
+        env_icu.Depends(
+            "#thirdparty/icu4c/icudata.gen.h",
+            f"#thirdparty/icu4c/{icu_data_name}",
+        )
+
+        env_icu.Command(
+            "#thirdparty/icu4c/icudata.gen.h",
+            f"#thirdparty/icu4c/{icu_data_name}",
+            make_icu_data,
+        )
+
         env_text_server_adv.Prepend(CPPPATH=["#thirdparty/icu4c/"])
     else:
         thirdparty_sources += ["icu_data/icudata_stub.cpp"]
@@ -475,16 +485,18 @@ if env["builtin_icu"]:
             "-DU_ENABLE_DYLOAD=0",
             "-DU_HAVE_LIB_SUFFIX=1",
             "-DU_LIB_SUFFIX_C_NAME=_godot",
-            "-DICU_DATA_NAME=" + icu_data_name,
+            f"-DICU_DATA_NAME={icu_data_name}",
         ]
     )
+
     env_text_server_adv.Append(
         CXXFLAGS=[
             "-DU_HAVE_LIB_SUFFIX=1",
             "-DU_LIB_SUFFIX_C_NAME=_godot",
-            "-DICU_DATA_NAME=" + icu_data_name,
+            f"-DICU_DATA_NAME={icu_data_name}",
         ]
     )
+
     if env_text_server_adv["tools"]:
         env_text_server_adv.Append(CXXFLAGS=["-DICU_STATIC_DATA"])
 

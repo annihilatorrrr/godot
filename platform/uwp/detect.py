@@ -12,14 +12,8 @@ def get_name():
 
 
 def can_build():
-    if os.name == "nt":
-        # building natively on windows!
-        if os.getenv("VSINSTALLDIR"):
-
-            if os.getenv("ANGLE_SRC_PATH") is None:
-                return False
-
-            return True
+    if os.name == "nt" and os.getenv("VSINSTALLDIR"):
+        return os.getenv("ANGLE_SRC_PATH") is not None
     return False
 
 
@@ -84,7 +78,7 @@ def configure(env):
 
     # ANGLE
     angle_root = os.getenv("ANGLE_SRC_PATH")
-    env.Prepend(CPPPATH=[angle_root + "/include"])
+    env.Prepend(CPPPATH=[f"{angle_root}/include"])
     jobs = str(env.GetOption("num_jobs"))
     angle_build_cmd = (
         "msbuild.exe "
@@ -107,19 +101,19 @@ def configure(env):
         arch = "arm"
         env["bits"] = "32"
         env.Append(LINKFLAGS=["/MACHINE:ARM"])
-        env.Append(LIBPATH=[vc_base_path + "lib/store/arm"])
+        env.Append(LIBPATH=[f"{vc_base_path}lib/store/arm"])
 
         angle_build_cmd += "ARM"
 
-        env.Append(LIBPATH=[angle_root + "/winrt/10/src/Release_ARM/lib"])
+        env.Append(LIBPATH=[f"{angle_root}/winrt/10/src/Release_ARM/lib"])
 
     else:
         compiler_version_str = methods.detect_visual_c_compiler_version(env["ENV"])
 
-        if compiler_version_str == "amd64" or compiler_version_str == "x86_amd64":
+        if compiler_version_str in ["amd64", "x86_amd64"]:
             env["bits"] = "64"
             print("Compiled program architecture will be a x64 executable (forcing bits=64).")
-        elif compiler_version_str == "x86" or compiler_version_str == "amd64_x86":
+        elif compiler_version_str in ["x86", "amd64_x86"]:
             env["bits"] = "32"
             print("Compiled program architecture will be a x86 executable. (forcing bits=32).")
         else:
@@ -136,8 +130,8 @@ def configure(env):
             angle_build_cmd += "Win32"
 
             env.Append(LINKFLAGS=["/MACHINE:X86"])
-            env.Append(LIBPATH=[vc_base_path + "lib/store"])
-            env.Append(LIBPATH=[angle_root + "/winrt/10/src/Release_Win32/lib"])
+            env.Append(LIBPATH=[f"{vc_base_path}lib/store"])
+            env.Append(LIBPATH=[f"{angle_root}/winrt/10/src/Release_Win32/lib"])
 
         else:
             arch = "x64"
@@ -146,11 +140,11 @@ def configure(env):
 
             env.Append(LINKFLAGS=["/MACHINE:X64"])
             env.Append(LIBPATH=[os.environ["VCINSTALLDIR"] + "lib/store/amd64"])
-            env.Append(LIBPATH=[angle_root + "/winrt/10/src/Release_x64/lib"])
+            env.Append(LIBPATH=[f"{angle_root}/winrt/10/src/Release_x64/lib"])
 
-    env["PROGSUFFIX"] = "." + arch + env["PROGSUFFIX"]
-    env["OBJSUFFIX"] = "." + arch + env["OBJSUFFIX"]
-    env["LIBSUFFIX"] = "." + arch + env["LIBSUFFIX"]
+    env["PROGSUFFIX"] = f".{arch}" + env["PROGSUFFIX"]
+    env["OBJSUFFIX"] = f".{arch}" + env["OBJSUFFIX"]
+    env["LIBSUFFIX"] = f".{arch}" + env["LIBSUFFIX"]
 
     ## Compile flags
 
@@ -162,8 +156,8 @@ def configure(env):
 
     env.Append(CPPDEFINES=["__WRL_NO_DEFAULT_LIB__", ("PNG_ABORT", "abort")])
 
-    env.Append(CPPFLAGS=["/AI", vc_base_path + "lib/store/references"])
-    env.Append(CPPFLAGS=["/AI", vc_base_path + "lib/x86/store/references"])
+    env.Append(CPPFLAGS=["/AI", f"{vc_base_path}lib/store/references"])
+    env.Append(CPPFLAGS=["/AI", f"{vc_base_path}lib/x86/store/references"])
 
     env.Append(
         CCFLAGS=(
@@ -208,7 +202,7 @@ def configure(env):
         "libGLESv2",
         "bcrypt",
     ]
-    env.Append(LINKFLAGS=[p + ".lib" for p in LIBS])
+    env.Append(LINKFLAGS=[f"{p}.lib" for p in LIBS])
 
     # Incremental linking fix
     env["BUILDERS"]["ProgramOriginal"] = env["BUILDERS"]["Program"]

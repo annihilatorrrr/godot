@@ -57,14 +57,14 @@ def install_ndk_if_needed(env):
     sdk_root = env["ANDROID_SDK_ROOT"]
     if not os.path.exists(get_android_ndk_root(env)):
         extension = ".bat" if os.name == "nt" else ""
-        sdkmanager = sdk_root + "/cmdline-tools/latest/bin/sdkmanager" + extension
+        sdkmanager = f"{sdk_root}/cmdline-tools/latest/bin/sdkmanager{extension}"
         if os.path.exists(sdkmanager):
             # Install the Android NDK
             print("Installing Android NDK...")
-            ndk_download_args = "ndk;" + get_ndk_version()
+            ndk_download_args = f"ndk;{get_ndk_version()}"
             subprocess.check_call([sdkmanager, ndk_download_args])
         else:
-            print("Cannot find " + sdkmanager)
+            print(f"Cannot find {sdkmanager}")
             print(
                 "Please ensure ANDROID_SDK_ROOT is correct and cmdline-tools are installed, or install NDK version "
                 + get_ndk_version()
@@ -85,27 +85,28 @@ def configure(env):
 
     print("Building for Android, platform " + env["ndk_platform"] + " (" + env["android_arch"] + ")")
 
-    if get_min_sdk_version(env["ndk_platform"]) < 21:
-        if env["android_arch"] == "x86_64" or env["android_arch"] == "arm64v8":
-            print(
-                "WARNING: android_arch="
-                + env["android_arch"]
-                + " is not supported by ndk_platform lower than android-21; setting ndk_platform=android-21"
-            )
-            env["ndk_platform"] = "android-21"
+    if get_min_sdk_version(env["ndk_platform"]) < 21 and env[
+        "android_arch"
+    ] in ["x86_64", "arm64v8"]:
+        print(
+            "WARNING: android_arch="
+            + env["android_arch"]
+            + " is not supported by ndk_platform lower than android-21; setting ndk_platform=android-21"
+        )
+        env["ndk_platform"] = "android-21"
 
     if env["android_arch"] == "armv7":
         target_triple = "armv7a-linux-androideabi"
-        env.extra_suffix = ".armv7" + env.extra_suffix
+        env.extra_suffix = f".armv7{env.extra_suffix}"
     elif env["android_arch"] == "arm64v8":
         target_triple = "aarch64-linux-android"
-        env.extra_suffix = ".armv8" + env.extra_suffix
+        env.extra_suffix = f".armv8{env.extra_suffix}"
     elif env["android_arch"] == "x86":
         target_triple = "i686-linux-android"
-        env.extra_suffix = ".x86" + env.extra_suffix
+        env.extra_suffix = f".x86{env.extra_suffix}"
     elif env["android_arch"] == "x86_64":
         target_triple = "x86_64-linux-android"
-        env.extra_suffix = ".x86_64" + env.extra_suffix
+        env.extra_suffix = f".x86_64{env.extra_suffix}"
 
     target_option = ["-target", target_triple + str(get_min_sdk_version(env["ndk_platform"]))]
     env.Append(ASFLAGS=[target_option, "-c"])
@@ -147,14 +148,14 @@ def configure(env):
         else:
             host_subpath = "windows"
 
-    toolchain_path = ndk_root + "/toolchains/llvm/prebuilt/" + host_subpath
-    compiler_path = toolchain_path + "/bin"
+    toolchain_path = f"{ndk_root}/toolchains/llvm/prebuilt/{host_subpath}"
+    compiler_path = f"{toolchain_path}/bin"
 
-    env["CC"] = compiler_path + "/clang"
-    env["CXX"] = compiler_path + "/clang++"
-    env["AR"] = compiler_path + "/llvm-ar"
-    env["RANLIB"] = compiler_path + "/llvm-ranlib"
-    env["AS"] = compiler_path + "/clang"
+    env["CC"] = f"{compiler_path}/clang"
+    env["CXX"] = f"{compiler_path}/clang++"
+    env["AR"] = f"{compiler_path}/llvm-ar"
+    env["RANLIB"] = f"{compiler_path}/llvm-ranlib"
+    env["AS"] = f"{compiler_path}/clang"
 
     # Disable exceptions and rtti on non-tools (template) builds
     if env["tools"]:

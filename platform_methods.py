@@ -34,12 +34,17 @@ def run_in_subprocess(builder_function):
         subprocess_env["PYTHONPATH"] = os.pathsep.join([os.getcwd()] + sys.path)
 
         # Keep only JSON serializable environment items
-        filtered_env = dict((key, value) for key, value in env.items() if isinstance(value, JSON_SERIALIZABLE_TYPES))
+        filtered_env = {
+            key: value
+            for key, value in env.items()
+            if isinstance(value, JSON_SERIALIZABLE_TYPES)
+        }
+
 
         # Save parameters
         args = (target, source, filtered_env)
         data = dict(fn=function_name, args=args)
-        json_path = os.path.join(os.environ["TMP"], uuid.uuid4().hex + ".json")
+        json_path = os.path.join(os.environ["TMP"], f"{uuid.uuid4().hex}.json")
         with open(json_path, "wt") as json_file:
             json.dump(data, json_file, indent=2)
         json_file_size = os.stat(json_path).st_size

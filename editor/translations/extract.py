@@ -24,20 +24,18 @@ class Message:
         lines.append("#: " + " ".join(self.locations))
 
         if self.msgctxt:
-            lines.append('msgctxt "{}"'.format(self.msgctxt))
+            lines.append(f'msgctxt "{self.msgctxt}"')
 
         if self.msgid_plural:
             lines += [
-                'msgid "{}"'.format(self.msgid),
-                'msgid_plural "{}"'.format(self.msgid_plural),
+                f'msgid "{self.msgid}"',
+                f'msgid_plural "{self.msgid_plural}"',
                 'msgstr[0] ""',
                 'msgstr[1] ""',
             ]
+
         else:
-            lines += [
-                'msgid "{}"'.format(self.msgid),
-                'msgstr ""',
-            ]
+            lines += [f'msgid "{self.msgid}"', 'msgstr ""']
 
         return "\n".join(lines)
 
@@ -61,10 +59,16 @@ if not os.path.exists("editor"):
 matches = []
 for root, dirnames, filenames in os.walk("."):
     dirnames[:] = [d for d in dirnames if d not in ["thirdparty"]]
-    for filename in fnmatch.filter(filenames, "*.cpp"):
-        matches.append(os.path.join(root, filename))
-    for filename in fnmatch.filter(filenames, "*.h"):
-        matches.append(os.path.join(root, filename))
+    matches.extend(
+        os.path.join(root, filename)
+        for filename in fnmatch.filter(filenames, "*.cpp")
+    )
+
+    matches.extend(
+        os.path.join(root, filename)
+        for filename in fnmatch.filter(filenames, "*.h")
+    )
+
 matches.sort()
 
 
@@ -72,9 +76,8 @@ remaps = {}
 remap_re = re.compile(r'^\t*capitalize_string_remaps\["(?P<from>.+)"\] = (String::utf8\()?"(?P<to>.+)"')
 with open("editor/editor_property_name_processor.cpp") as f:
     for line in f:
-        m = remap_re.search(line)
-        if m:
-            remaps[m.group("from")] = m.group("to")
+        if m := remap_re.search(line):
+            remaps[m["from"]] = m["to"]
 
 
 main_po = """
@@ -149,8 +152,7 @@ def _process_editor_string(name):
     for segment in name.split("_"):
         if not segment:
             continue
-        remapped = remaps.get(segment)
-        if remapped:
+        if remapped := remaps.get(segment):
             capitalized_parts.append(remapped)
         else:
             # See String::capitalize().
@@ -159,17 +161,12 @@ def _process_editor_string(name):
                 part.title()
                 for part in capitalize_re.sub("_", segment).replace("_", " ").split()
             ))
-            # fmt: on
-
     return " ".join(capitalized_parts)
 
 
 def _is_block_translator_comment(translator_line):
     line = translator_line.strip()
-    if line.find("//") == 0:
-        return False
-    else:
-        return True
+    return line.find("//") != 0
 
 
 def _extract_translator_comment(line, is_block_translator_comment):
@@ -185,18 +182,16 @@ def _extract_translator_comment(line, is_block_translator_comment):
 
     if is_block_translator_comment:
         # If '*/' is found, then it's the end.
-        if line.rfind("*/") != -1:
+        if line.rfind("*/") == -1:
+            extracted_comment = line[start:]
+        else:
             extracted_comment = line[start : line.rfind("*/")]
             reached_end = True
-        else:
-            extracted_comment = line[start:]
+    elif line.find("//") != 0:
+        reached_end = True
     else:
-        # If beginning is not '//', then it's the end.
-        if line.find("//") != 0:
-            reached_end = True
-        else:
-            start = 2 if start == 0 else start
-            extracted_comment = line[start:]
+        start = 2 if start == 0 else start
+        extracted_comment = line[start:]
 
     return (not reached_end, extracted_comment)
 
@@ -235,7 +230,7 @@ def process_file(f, fname):
                 for m in pattern.finditer(l):
                     location = os.path.relpath(fname).replace("\\", "/")
                     if line_nb:
-                        location += ":" + str(lc)
+                        location += f":{str(lc)}"
 
                     captures = m.groupdict("")
                     msg = captures.get("message", "")
@@ -251,16 +246,12 @@ def process_file(f, fname):
                         if current_subgroup:
                             if msg.startswith(current_subgroup):
                                 msg = msg[len(current_subgroup) :]
-                            elif current_subgroup.startswith(msg):
-                                pass  # Keep this as-is. See EditorInspector::update_tree().
-                            else:
+                            elif not current_subgroup.startswith(msg):
                                 current_subgroup = ""
                         elif current_group:
                             if msg.startswith(current_group):
                                 msg = msg[len(current_group) :]
-                            elif current_group.startswith(msg):
-                                pass  # Keep this as-is. See EditorInspector::update_tree().
-                            else:
+                            elif not current_group.startswith(msg):
                                 current_group = ""
                                 current_subgroup = ""
 

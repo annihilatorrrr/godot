@@ -162,8 +162,15 @@ if env["freetype_enabled"]:
     ]
     thirdparty_freetype_sources += [thirdparty_zlib_dir + file for file in thirdparty_zlib_sources]
 
-    env_freetype.Append(CPPPATH=[thirdparty_freetype_dir + "/include", thirdparty_zlib_dir, thirdparty_png_dir])
-    env.Append(CPPPATH=[thirdparty_freetype_dir + "/include"])
+    env_freetype.Append(
+        CPPPATH=[
+            f"{thirdparty_freetype_dir}/include",
+            thirdparty_zlib_dir,
+            thirdparty_png_dir,
+        ]
+    )
+
+    env.Append(CPPPATH=[f"{thirdparty_freetype_dir}/include"])
 
     env_freetype.Append(
         CPPDEFINES=[
@@ -276,7 +283,7 @@ if env["freetype_enabled"]:
         ]
     )
 
-if env["platform"] == "android" or env["platform"] == "linuxbsd":
+if env["platform"] in ["android", "linuxbsd"]:
     env_harfbuzz.Append(CCFLAGS=["-DHAVE_PTHREAD"])
 
 env_harfbuzz.Append(
@@ -575,10 +582,17 @@ thirdparty_icu_sources = [thirdparty_icu_dir + file for file in thirdparty_icu_s
 icu_data_name = "icudt71l.dat"
 
 if env["static_icu_data"]:
-    env_icu.Depends("../../../thirdparty/icu4c/icudata.gen.h", "../../../thirdparty/icu4c/" + icu_data_name)
-    env_icu.Command(
-        "../../../thirdparty/icu4c/icudata.gen.h", "../../../thirdparty/icu4c/" + icu_data_name, methods.make_icu_data
+    env_icu.Depends(
+        "../../../thirdparty/icu4c/icudata.gen.h",
+        f"../../../thirdparty/icu4c/{icu_data_name}",
     )
+
+    env_icu.Command(
+        "../../../thirdparty/icu4c/icudata.gen.h",
+        f"../../../thirdparty/icu4c/{icu_data_name}",
+        methods.make_icu_data,
+    )
+
     env.Append(CXXFLAGS=["-DICU_STATIC_DATA"])
     env.Append(CPPPATH=["../../../thirdparty/icu4c/"])
 else:
@@ -600,16 +614,18 @@ env_icu.Append(
         "-DU_ENABLE_DYLOAD=0",
         "-DU_HAVE_LIB_SUFFIX=1",
         "-DU_LIB_SUFFIX_C_NAME=_godot",
-        "-DICU_DATA_NAME=" + icu_data_name,
+        f"-DICU_DATA_NAME={icu_data_name}",
     ]
 )
+
 env.Append(
     CXXFLAGS=[
         "-DU_HAVE_LIB_SUFFIX=1",
         "-DU_LIB_SUFFIX_C_NAME=_godot",
-        "-DICU_DATA_NAME=" + icu_data_name,
+        f"-DICU_DATA_NAME={icu_data_name}",
     ]
 )
+
 env.Append(CPPPATH=["../../../thirdparty/icu4c/common/"])
 
 if env["platform"] == "windows":

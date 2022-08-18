@@ -16,8 +16,7 @@ def can_build():
     if os.name != "posix" or sys.platform == "darwin":
         return False
 
-    pkgconf_error = os.system("pkg-config --version > /dev/null")
-    if pkgconf_error:
+    if pkgconf_error := os.system("pkg-config --version > /dev/null"):
         print("Error: pkg-config not found. Aborting.")
         return False
 
@@ -111,7 +110,7 @@ def configure(env):
         if "clang++" not in os.path.basename(env["CXX"]):
             env["CC"] = "clang"
             env["CXX"] = "clang++"
-        env.extra_suffix = ".llvm" + env.extra_suffix
+        env.extra_suffix = f".llvm{env.extra_suffix}"
 
     if env["linker"] != "default":
         print("Using linker program: " + env["linker"])
@@ -121,8 +120,8 @@ def configure(env):
             if cc_semver < (12, 1):
                 found_wrapper = False
                 for path in ["/usr/libexec", "/usr/local/libexec", "/usr/lib", "/usr/local/lib"]:
-                    if os.path.isfile(path + "/mold/ld"):
-                        env.Append(LINKFLAGS=["-B" + path + "/mold"])
+                    if os.path.isfile(f"{path}/mold/ld"):
+                        env.Append(LINKFLAGS=[f"-B{path}/mold"])
                         found_wrapper = True
                         break
                 if not found_wrapper:
@@ -131,7 +130,7 @@ def configure(env):
             else:
                 env.Append(LINKFLAGS=["-fuse-ld=mold"])
         else:
-            env.Append(LINKFLAGS=["-fuse-ld=%s" % env["linker"]])
+            env.Append(LINKFLAGS=[f'-fuse-ld={env["linker"]}'])
 
     if env["use_thinlto"]:
         if not env["use_llvm"] or env["linker"] != "lld":
@@ -148,39 +147,39 @@ def configure(env):
         env.extra_suffix += ".san"
         env.Append(CCFLAGS=["-DSANITIZERS_ENABLED"])
 
-        if env["use_ubsan"]:
+    if env["use_ubsan"]:
+        env.Append(
+            CCFLAGS=[
+                "-fsanitize=undefined,shift,shift-exponent,integer-divide-by-zero,unreachable,vla-bound,null,return,signed-integer-overflow,bounds,float-divide-by-zero,float-cast-overflow,nonnull-attribute,returns-nonnull-attribute,bool,enum,vptr,pointer-overflow,builtin"
+            ]
+        )
+        env.Append(LINKFLAGS=["-fsanitize=undefined"])
+        if env["use_llvm"]:
             env.Append(
                 CCFLAGS=[
-                    "-fsanitize=undefined,shift,shift-exponent,integer-divide-by-zero,unreachable,vla-bound,null,return,signed-integer-overflow,bounds,float-divide-by-zero,float-cast-overflow,nonnull-attribute,returns-nonnull-attribute,bool,enum,vptr,pointer-overflow,builtin"
+                    "-fsanitize=nullability-return,nullability-arg,function,nullability-assign,implicit-integer-sign-change"
                 ]
             )
-            env.Append(LINKFLAGS=["-fsanitize=undefined"])
-            if env["use_llvm"]:
-                env.Append(
-                    CCFLAGS=[
-                        "-fsanitize=nullability-return,nullability-arg,function,nullability-assign,implicit-integer-sign-change"
-                    ]
-                )
-            else:
-                env.Append(CCFLAGS=["-fsanitize=bounds-strict"])
+        else:
+            env.Append(CCFLAGS=["-fsanitize=bounds-strict"])
 
-        if env["use_asan"]:
-            env.Append(CCFLAGS=["-fsanitize=address,pointer-subtract,pointer-compare"])
-            env.Append(LINKFLAGS=["-fsanitize=address"])
+    if env["use_asan"]:
+        env.Append(CCFLAGS=["-fsanitize=address,pointer-subtract,pointer-compare"])
+        env.Append(LINKFLAGS=["-fsanitize=address"])
 
-        if env["use_lsan"]:
-            env.Append(CCFLAGS=["-fsanitize=leak"])
-            env.Append(LINKFLAGS=["-fsanitize=leak"])
+    if env["use_lsan"]:
+        env.Append(CCFLAGS=["-fsanitize=leak"])
+        env.Append(LINKFLAGS=["-fsanitize=leak"])
 
-        if env["use_tsan"]:
-            env.Append(CCFLAGS=["-fsanitize=thread"])
-            env.Append(LINKFLAGS=["-fsanitize=thread"])
+    if env["use_tsan"]:
+        env.Append(CCFLAGS=["-fsanitize=thread"])
+        env.Append(LINKFLAGS=["-fsanitize=thread"])
 
-        if env["use_msan"] and env["use_llvm"]:
-            env.Append(CCFLAGS=["-fsanitize=memory"])
-            env.Append(CCFLAGS=["-fsanitize-memory-track-origins"])
-            env.Append(CCFLAGS=["-fsanitize-recover=memory"])
-            env.Append(LINKFLAGS=["-fsanitize=memory"])
+    if env["use_msan"] and env["use_llvm"]:
+        env.Append(CCFLAGS=["-fsanitize=memory"])
+        env.Append(CCFLAGS=["-fsanitize-memory-track-origins"])
+        env.Append(CCFLAGS=["-fsanitize-recover=memory"])
+        env.Append(LINKFLAGS=["-fsanitize=memory"])
 
     if env["use_lto"]:
         if env["use_thinlto"]:
@@ -393,17 +392,18 @@ def configure(env):
         import re
 
         linker_version_str = subprocess.check_output([env.subst(env["LINK"]), "-Wl,--version"]).decode("utf-8")
-        gnu_ld_version = re.search("^GNU ld [^$]*(\d+\.\d+)$", linker_version_str, re.MULTILINE)
-        if not gnu_ld_version:
-            print(
-                "Warning: Creating template binaries enabled for PCK embedding is currently only supported with GNU ld, not gold or LLD."
-            )
-        else:
+        if gnu_ld_version := re.search(
+            "^GNU ld [^$]*(\d+\.\d+)$", linker_version_str, re.MULTILINE
+        ):
             if float(gnu_ld_version.group(1)) >= 2.30:
                 env.Append(LINKFLAGS=["-T", "platform/linuxbsd/pck_embed.ld"])
             else:
                 env.Append(LINKFLAGS=["-T", "platform/linuxbsd/pck_embed.legacy.ld"])
 
+        else:
+            print(
+                "Warning: Creating template binaries enabled for PCK embedding is currently only supported with GNU ld, not gold or LLD."
+            )
     ## Cross-compilation
 
     if is64 and env["bits"] == "32":
@@ -419,6 +419,5 @@ def configure(env):
         if env["use_llvm"]:
             env["LINKCOM"] = env["LINKCOM"] + " -l:libatomic.a"
 
-    else:
-        if env["use_llvm"]:
-            env.Append(LIBS=["atomic"])
+    elif env["use_llvm"]:
+        env.Append(LIBS=["atomic"])
