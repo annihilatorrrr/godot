@@ -13,6 +13,14 @@
 		<link title="Third Person Shooter (TPS) Demo">https://godotengine.org/asset-library/asset/2710</link>
 	</tutorials>
 	<methods>
+		<method name="bake_mesh_from_current_blend_shape_mix">
+			<return type="ArrayMesh" />
+			<param index="0" name="existing" type="ArrayMesh" default="null" />
+			<description>
+				Takes a snapshot from the current [ArrayMesh] with all blend shapes applied according to their current weights and bakes it to the provided [param existing] mesh. If no [param existing] mesh is provided a new [ArrayMesh] is created, baked and returned. Mesh surface materials are not copied.
+				[b]Performance:[/b] [Mesh] data needs to be received from the GPU, stalling the [RenderingServer] in the process.
+			</description>
+		</method>
 		<method name="create_convex_collision">
 			<return type="void" />
 			<param index="0" name="clean" type="bool" default="true" />
@@ -68,6 +76,12 @@
 			<param index="0" name="blend_shape_idx" type="int" />
 			<description>
 				Returns the value of the blend shape at the given [param blend_shape_idx]. Returns [code]0.0[/code] and produces an error if [member mesh] is [code]null[/code] or doesn't have a blend shape at that index.
+			</description>
+		</method>
+		<method name="get_skin_reference" qualifiers="const">
+			<return type="SkinReference" />
+			<description>
+				Returns the internal [SkinReference] containing the skeleton's [RID] attached to this RID. See also [method Resource.get_rid], [method SkinReference.get_skeleton], and [method RenderingServer.instance_attach_skeleton].
 			</description>
 		</method>
 		<method name="get_surface_override_material" qualifiers="const">
